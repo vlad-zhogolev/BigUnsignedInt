@@ -9,6 +9,7 @@
 #include <vector>
 #include <regex>
 #include <queue>
+#include <sstream>
 
 const std::size_t BIG_UNSIGNED_INT_SIZE = 64;
 
@@ -38,21 +39,26 @@ public:
     using UnsignedVector = std::vector<Unsigned>;
     using size_type = UnsignedVector::size_type;
 
-    friend std::istream& operator>><N>(std::istream& is, BigUnsignedInt<N>& bigUnsignedInt);
+    friend std::istream& operator>><N>(std::istream& is, BigUnsignedInt& bigUnsignedInt);
 
-    friend std::ostream& operator<<<N>(std::ostream& os, const BigUnsignedInt<N>& bigUnsignedInt);
+    friend std::ostream& operator<<<N>(std::ostream& os, const BigUnsignedInt& bigUnsignedInt);
 
-    friend std::ostream& operator<<<N>(std::ostream& os, BigUnsignedInt<N>&& bigUnsignedInt);
+    friend std::ostream& operator<<<N>(std::ostream& os, BigUnsignedInt&& bigUnsignedInt);
 
-    friend BigUnsignedInt<N> operator+<N>(const BigUnsignedInt& a, const BigUnsignedInt& b);
+    friend BigUnsignedInt operator+<N>(const BigUnsignedInt& a, const BigUnsignedInt& b);
 
-    friend BigUnsignedInt<N> operator-<N>(const BigUnsignedInt& a, const BigUnsignedInt& b);
+    friend BigUnsignedInt operator-<N>(const BigUnsignedInt& a, const BigUnsignedInt& b);
 
 public:
 
     BigUnsignedInt() : _binRepr(N) {}
 
+    explicit BigUnsignedInt(const std::string& stringRepr);
+
     static bool overflowed() { return _carryFlag > 0; }
+
+private:
+    static void createFromString(const std::string& input, BigUnsignedInt& bigUnsignedInt);
 
 private:
     UnsignedVector _binRepr;
@@ -69,6 +75,71 @@ std::istream& operator>>(std::istream& is, BigUnsignedInt<N>& bigUnsignedInt)
     // Check that provided input is unsigned number
     string input;
     is >> input;
+    BigUnsignedInt<N>::createFromString(input, bigUnsignedInt);
+    return is;
+}
+
+template<std::size_t N>
+std::ostream& operator<<(std::ostream& os, const BigUnsignedInt<N>& bigUnsignedInt)
+{
+    typename BigUnsignedInt<N>::size_type counter = 1;
+    for (const auto& bit:bigUnsignedInt._binRepr)
+    {
+        os << bit;
+        if (counter++ % 4 == 0)
+            os << " ";
+    }
+    return os;
+}
+
+template<std::size_t N>
+std::ostream& operator<<(std::ostream& os, BigUnsignedInt<N>&& bigUnsignedInt)
+{
+    os << bigUnsignedInt;
+    return os;
+}
+
+template<std::size_t N>
+BigUnsignedInt<N> operator+(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b)
+{
+    BigUnsignedInt<N>::_carryFlag = 0;
+    BigUnsignedInt<N> result;
+    for (typename BigUnsignedInt<N>::size_type i = N - 1;
+         i != std::numeric_limits<typename BigUnsignedInt<N>::size_type>::max(); --i)
+    {
+        result._binRepr[i] = a._binRepr[i] ^ b._binRepr[i] ^ BigUnsignedInt<N>::_carryFlag;
+        BigUnsignedInt<N>::_carryFlag =
+                (a._binRepr[i] & b._binRepr[i]) | (BigUnsignedInt<N>::_carryFlag & (a._binRepr[i] ^ b._binRepr[i]));
+    }
+    return result;
+}
+
+template<std::size_t N>
+BigUnsignedInt<N> operator-(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b)
+{
+    BigUnsignedInt<N>::_carryFlag = 0;
+    BigUnsignedInt<N> result;
+    for (typename BigUnsignedInt<N>::size_type i = N - 1;
+         i != std::numeric_limits<typename BigUnsignedInt<N>::size_type>::max(); --i)
+    {
+        result._binRepr[i] = a._binRepr[i] ^ b._binRepr[i] ^ BigUnsignedInt<N>::_carryFlag;
+        BigUnsignedInt<N>::_carryFlag =
+                ((1 ^ a._binRepr[i]) & b._binRepr[i]) |
+                (BigUnsignedInt<N>::_carryFlag & ((1 ^ a._binRepr[i]) ^ b._binRepr[i]));
+    }
+    return result;
+}
+
+template<std::size_t N>
+BigUnsignedInt<N>::BigUnsignedInt(const std::string& stringRepr) : BigUnsignedInt()
+{
+    createFromString(stringRepr, *this);
+}
+
+template<std::size_t N>
+void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedInt& bigUnsignedInt)
+{
+    using namespace std;
     regex unsignedNumber("[[:digit:]]+");
     if (!regex_match(input, unsignedNumber))
         throw invalid_argument("provided input isn't unsigned integer");
@@ -106,55 +177,7 @@ std::istream& operator>>(std::istream& is, BigUnsignedInt<N>& bigUnsignedInt)
             quotient.pop_front();
         }
     } while (!digits.empty());
-
-    return is;
 }
 
-template<std::size_t N>
-std::ostream& operator<<(std::ostream& os, const BigUnsignedInt<N>& bigUnsignedInt)
-{
-    typename BigUnsignedInt<N>::size_type counter = 1;
-    for (const auto& bit:bigUnsignedInt._binRepr)
-    {
-        os << bit;
-        if (counter++ % 4 == 0)
-            os << " ";
-    }
-    return os;
-}
-
-template<std::size_t N>
-std::ostream& operator<<(std::ostream& os, BigUnsignedInt<N>&& bigUnsignedInt) { os << bigUnsignedInt; }
-
-template<std::size_t N>
-BigUnsignedInt<N> operator+(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b)
-{
-    BigUnsignedInt<N>::_carryFlag = 0;
-    BigUnsignedInt<N> result;
-    for (typename BigUnsignedInt<N>::size_type i = N - 1;
-         i != std::numeric_limits<typename BigUnsignedInt<N>::size_type>::max(); --i)
-    {
-        result._binRepr[i] = a._binRepr[i] ^ b._binRepr[i] ^ BigUnsignedInt<N>::_carryFlag;
-        BigUnsignedInt<N>::_carryFlag =
-                (a._binRepr[i] & b._binRepr[i]) | (BigUnsignedInt<N>::_carryFlag & (a._binRepr[i] ^ b._binRepr[i]));
-    }
-    return result;
-}
-
-template<std::size_t N>
-BigUnsignedInt<N> operator-(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b)
-{
-    BigUnsignedInt<N>::_carryFlag = 0;
-    BigUnsignedInt<N> result;
-    for (typename BigUnsignedInt<N>::size_type i = N - 1;
-         i != std::numeric_limits<typename BigUnsignedInt<N>::size_type>::max(); --i)
-    {
-        result._binRepr[i] = a._binRepr[i] ^ b._binRepr[i] ^ BigUnsignedInt<N>::_carryFlag;
-        BigUnsignedInt<N>::_carryFlag =
-                ((1 ^ a._binRepr[i]) & b._binRepr[i]) |
-                (BigUnsignedInt<N>::_carryFlag & ((1 ^ a._binRepr[i]) ^ b._binRepr[i]));
-    }
-    return result;
-}
 
 #endif //BIGUNSIGNEDINTEGER_BIGUNSIGNEDINT_HPP
