@@ -50,12 +50,6 @@ public:
 
     friend std::ostream& operator<<<N>(std::ostream& os, BigUnsignedInt&& bigUnsignedInt);
 
-    friend BigUnsignedInt operator<<<N>(BigUnsignedInt bigUnsignedInt, std::size_t shift);
-
-    friend BigUnsignedInt operator+<N>(const BigUnsignedInt& a, const BigUnsignedInt& b);
-
-    friend BigUnsignedInt operator-<N>(const BigUnsignedInt& a, const BigUnsignedInt& b);
-
 public:
 
     BigUnsignedInt() : _binRepr(N) {}

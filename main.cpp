@@ -9,7 +9,7 @@ int main()
     cin >> number1 >> number2;
 
     BigUnsignedInt<N> bi1(number1), bi2(number2);
-    BigUnsignedInt<N> bi3 = bi1 * bi2;
+    BigUnsignedInt<N> bi3 = bi1 + bi2;
     cout << bi1 << "\n"
          << bi2 << "\n"
          << bi3 << "\n"
@@ -18,6 +18,6 @@ int main()
     unsigned long long u1, u2;
     u1 = stoull(number1);
     u2 = stoull(number2);
-    cout << BigUnsignedInt<N>(to_string(u1 * u2)) << endl;
+    cout << BigUnsignedInt<N>(to_string(u1 + u2)) << endl;
     return 0;
 }
