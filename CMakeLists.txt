@@ -3,5 +3,7 @@ project(BigUnsignedInteger)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(BigUnsignedInteger main.cpp
-                BigUnsignedInt.hpp         )
+add_executable(BigUnsignedInteger
+        main.cpp
+        BigUnsignedInt.h
+        BigUnsignedInt.hpp)

@@ -2,78 +2,7 @@
 // Created by ZV on 22.09.2018.
 //
 
-#ifndef BIGUNSIGNEDINTEGER_BIGUNSIGNEDINT_HPP
-#define BIGUNSIGNEDINTEGER_BIGUNSIGNEDINT_HPP
-
-#include <iostream>
-#include <vector>
-#include <regex>
-#include <queue>
-
-const std::size_t BIG_UNSIGNED_INT_SIZE = 64;
-
-template<std::size_t N>
-class BigUnsignedInt;
-
-template<std::size_t N>
-std::istream& operator>>(std::istream& is, BigUnsignedInt<N>& bigUnsignedInt);
-
-template<std::size_t N>
-std::ostream& operator<<(std::ostream& os, const BigUnsignedInt<N>& bigUnsignedInt);
-
-template<std::size_t N>
-std::ostream& operator<<(std::ostream& os, BigUnsignedInt<N>&& bigUnsignedInt);
-
-template<std::size_t N>
-BigUnsignedInt<N> operator<<(BigUnsignedInt<N> bigUnsignedInt, std::size_t shift);
-
-template<std::size_t N>
-BigUnsignedInt<N> operator+(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b);
-
-template<std::size_t N>
-BigUnsignedInt<N> operator-(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b);
-
-template<std::size_t N>
-BigUnsignedInt<N> operator*(const BigUnsignedInt<N>& a, const BigUnsignedInt<N>& b);
-
-template<std::size_t N = BIG_UNSIGNED_INT_SIZE>
-class BigUnsignedInt {
-public:
-
-    using Unsigned = unsigned int;
-    using UnsignedVector = std::vector<Unsigned>;
-    using size_type = UnsignedVector::size_type;
-
-    friend std::istream& operator>><N>(std::istream& is, BigUnsignedInt& bigUnsignedInt);
-
-    friend std::ostream& operator<<<N>(std::ostream& os, const BigUnsignedInt& bigUnsignedInt);
-
-    friend std::ostream& operator<<<N>(std::ostream& os, BigUnsignedInt&& bigUnsignedInt);
-
-public:
-
-    BigUnsignedInt() : _binRepr(N) {}
-
-    explicit BigUnsignedInt(const std::string& stringRepr);
-
-    BigUnsignedInt& operator+=(const BigUnsignedInt& other);
-
-    BigUnsignedInt& operator-=(const BigUnsignedInt& other);
-
-    BigUnsignedInt& operator*=(const BigUnsignedInt& other);
-
-    BigUnsignedInt& operator<<=(std::size_t shift);
-
-    static bool overflowed() { return _carryFlag > 0; }
-
-private:
-
-    static void createFromString(const std::string& input, BigUnsignedInt& bigUnsignedInt);
-
-private:
-    UnsignedVector _binRepr;
-    static Unsigned _carryFlag;
-};
+#include "BigUnsignedInt.h"
 
 template<size_t N>
 typename BigUnsignedInt<N>::Unsigned BigUnsignedInt<N>::_carryFlag = 0;
@@ -244,10 +173,10 @@ void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedIn
     if (!regex_match(input, unsignedNumber))
         throw invalid_argument("provided input isn't unsigned integer");
 
-    // Fill queue with digits of provided number
-    queue<typename BigUnsignedInt<N>::Unsigned> digits;
+    // Fill dividend with digits of provided number
+    queue<typename BigUnsignedInt<N>::Unsigned> dividend;
     for (const auto& letter:input)
-        digits.push(static_cast<typename BigUnsignedInt<N>::Unsigned>(letter - '0'));
+        dividend.push(static_cast<typename BigUnsignedInt<N>::Unsigned>(letter - '0'));
 
     deque<typename BigUnsignedInt<N>::Unsigned> quotient;
     typename BigUnsignedInt<N>::size_type counter = N - 1;
@@ -256,10 +185,10 @@ void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedIn
     do
     {
         typename BigUnsignedInt<N>::Unsigned value = 0;
-        while (!digits.empty())
+        while (!dividend.empty())
         {
-            value = value * 10 + digits.front();
-            digits.pop();
+            value = value * 10 + dividend.front();
+            dividend.pop();
             quotient.push_back(value / 2);
             value %= 2;
 
@@ -273,11 +202,8 @@ void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedIn
             quotient.pop_front();
         while (!quotient.empty())
         {
-            digits.push(quotient.front());
+            dividend.push(quotient.front());
             quotient.pop_front();
         }
-    } while (!digits.empty());
+    } while (!dividend.empty());
 }
-
-
-#endif //BIGUNSIGNEDINTEGER_BIGUNSIGNEDINT_HPP
