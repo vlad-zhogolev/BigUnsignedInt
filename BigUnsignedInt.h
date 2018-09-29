@@ -10,8 +10,6 @@
 #include <regex>
 #include <queue>
 
-//TODO: separate this file on .h and .hpp
-
 const std::size_t BIG_UNSIGNED_INT_SIZE = 64;
 
 template<std::size_t N>
@@ -111,55 +109,52 @@ public:
 
 public:
 
-    /// Default constructor
+    ///\brief Default constructor
     BigUnsignedInt() : _binRepr(N) {}
 
-    /**
-     * Creates BigUnsignedInt object from string representation.
+    /**\brief Creates BigUnsignedInt object from string representation.
      * Throws same exceptions as createFromString for the same reasons.
      * @param stringRepr - string containing an unsigned number
      */
     explicit BigUnsignedInt(const std::string& stringRepr);
 
-    /**
-     * Increases this BigUnsignedInt by other.
+    /**\brief Increases this BigUnsignedInt by other.
      * @param other - BigUnsignedInt to add
      * @return - reference to *this object increased by other
      */
     BigUnsignedInt& operator+=(const BigUnsignedInt& other);
 
-    /**
-     * Decreases this BigUnsignedInt by other.
+    /**\brief Decreases this BigUnsignedInt by other.
      * @param other - BigUnsignedInt to subtract
      * @return - reference to *this object decreased by other
      */
     BigUnsignedInt& operator-=(const BigUnsignedInt& other);
 
-    /**
-     * Multiplies this BigUnsignedInt by other.
+    /**\brief Multiplies this BigUnsignedInt by other.
      * @param other - BigUnsignedInt to multiply on
      * @return - reference to *this object multiplied on other
      */
     BigUnsignedInt& operator*=(const BigUnsignedInt& other);
 
-    /**
-     * Shifts this number to the left by provided number of bits.
+    /**\brief Shifts this number to the left by provided number of bits.
      * @param shift - number of bits to shift by
      * @return - reference to *this object shifted by provided number of bits
      */
     BigUnsignedInt& operator<<=(std::size_t shift);
 
-    /**
-     * Checks if the result of last operation can be represented
-     * as unsigned integer of size N.
+    /**\brief Checks if the result of last operation can be represented as unsigned integer of size N.
      * @return - true, if result doesn't fit, false otherwise
      */
     static bool overflowed() { return _carryFlag > 0; }
 
 private:
+
+    ///\brief Resets number to zero
+    void resetToZero();
+
     /**
-     * Stores binary representation of number contained in string in provided
-     * object. Throws invalid argument exception if provided string contains something
+     * Stores binary representation of number contained in string in provided object.
+     * Throws invalid argument exception if provided string contains something
      * else but digits, size of BigUnsignedInt is too small to represent provided number.
      * @param input - string containing an unsigned number
      * @param bigUnsignedInt - object to store the number converted from string

@@ -4,15 +4,14 @@
 
 #include "BigUnsignedInt.h"
 
-template<size_t N>
+template<std::size_t N>
 typename BigUnsignedInt<N>::Unsigned BigUnsignedInt<N>::_carryFlag = 0;
 
 template<std::size_t N>
 std::istream& operator>>(std::istream& is, BigUnsignedInt<N>& bigUnsignedInt)
 {
-    using namespace std;
     // Check that provided input is unsigned number
-    string input;
+    std::string input;
     is >> input;
     BigUnsignedInt<N>::createFromString(input, bigUnsignedInt);
     return is;
@@ -65,18 +64,17 @@ BigUnsignedInt<N> operator<<(BigUnsignedInt<N> bigUnsignedInt, const size_t shif
     return bigUnsignedInt <<= shift;
 }
 
-//TODO: try to make it with Boolean function
 template<std::size_t N>
 BigUnsignedInt<N>& BigUnsignedInt<N>::operator<<=(const std::size_t shift)
 {
-    BigUnsignedInt::_carryFlag = 0;
+    _carryFlag = 0;
 
     // Shift completely erases number
     if (shift >= N)
     {
         for (Unsigned& bit:_binRepr)
             bit = 0;
-        BigUnsignedInt::_carryFlag = 1;
+        _carryFlag = 1;
         return *this;
     }
 
@@ -89,7 +87,7 @@ BigUnsignedInt<N>& BigUnsignedInt<N>::operator<<=(const std::size_t shift)
 
     // Set the _carryFlag if we lose at least first '1' by applying shift
     if (shift > firstOneIndex)
-        BigUnsignedInt<N>::_carryFlag = 1;
+        _carryFlag = 1;
 
     // Shift the number and fill right part of it with '0'
     for (std::size_t i = shift; i < N; ++i)
@@ -103,14 +101,12 @@ BigUnsignedInt<N>& BigUnsignedInt<N>::operator<<=(const std::size_t shift)
 template<std::size_t N>
 BigUnsignedInt<N>& BigUnsignedInt<N>::operator+=(const BigUnsignedInt& other)
 {
-    BigUnsignedInt::_carryFlag = 0;
-    for (typename BigUnsignedInt<N>::size_type i = N - 1;
-         i != std::numeric_limits<typename BigUnsignedInt::size_type>::max(); --i)
+    _carryFlag = 0;
+    for (size_type i = N - 1; i != std::numeric_limits<size_type>::max(); --i)
     {
         Unsigned thisBit = this->_binRepr[i];
-        _binRepr[i] = thisBit ^ other._binRepr[i] ^ BigUnsignedInt::_carryFlag;
-        BigUnsignedInt::_carryFlag =
-                (thisBit & other._binRepr[i]) | (BigUnsignedInt::_carryFlag & (thisBit ^ other._binRepr[i]));
+        _binRepr[i] = thisBit ^ other._binRepr[i] ^ _carryFlag;
+        _carryFlag = (thisBit & other._binRepr[i]) | (_carryFlag & (thisBit ^ other._binRepr[i]));
     }
     return *this;
 }
@@ -118,43 +114,38 @@ BigUnsignedInt<N>& BigUnsignedInt<N>::operator+=(const BigUnsignedInt& other)
 template<std::size_t N>
 BigUnsignedInt<N>& BigUnsignedInt<N>::operator-=(const BigUnsignedInt& other)
 {
-    BigUnsignedInt::_carryFlag = 0;
-    for (typename BigUnsignedInt::size_type i = N - 1;
-         i != std::numeric_limits<typename BigUnsignedInt<N>::size_type>::max(); --i)
+    _carryFlag = 0;
+    for (size_type i = N - 1; i != std::numeric_limits<size_type>::max(); --i)
     {
         Unsigned thisBit = _binRepr[i];
-        _binRepr[i] = thisBit ^ other._binRepr[i] ^ BigUnsignedInt::_carryFlag;
-        BigUnsignedInt::_carryFlag =
-                ((1 ^ thisBit) & other._binRepr[i]) |
-                (BigUnsignedInt::_carryFlag & ((1 ^ thisBit) ^ other._binRepr[i]));
+        _binRepr[i] = thisBit ^ other._binRepr[i] ^ _carryFlag;
+        thisBit ^= 1;
+        _carryFlag = (thisBit & other._binRepr[i]) | (_carryFlag & (thisBit ^ other._binRepr[i]));
     }
     return *this;
 }
 
-//TODO: test it and check that _carryBit is set right in cases of overflow
 template<std::size_t N>
 BigUnsignedInt<N>& BigUnsignedInt<N>::operator*=(const BigUnsignedInt& other)
 {
+    Unsigned multOverflow = 0;
     BigUnsignedInt thisCopy(*this);
-    *this = BigUnsignedInt();
-    std::size_t prev = N - 1; // position of the end of number after last shift
+    this->resetToZero();
+    std::size_t prev = N - 1; // position of the end of number represented by *this after last shift
 
-    for (std::size_t i = N - 1; i != std::numeric_limits<BigUnsignedInt::size_type>::max(); --i)
+    for (std::size_t i = N - 1; i != std::numeric_limits<size_type>::max(); --i)
     {
         if (other._binRepr[i] == 1)
         {
             // Shift the thisCopy so the last digit of original *this stays in i-th place
             thisCopy <<= prev - i;
-            //if(BigUnsignedInt::_carryFlag == 1) // check that no overflow happened
-            //return *this;
-
+            multOverflow |= _carryFlag;
             *this += thisCopy;
-            //if(BigUnsignedInt::_carryFlag == 1)
-            //return *this;
-
+            multOverflow |= _carryFlag;
             prev = i;
         }
     }
+    _carryFlag = multOverflow;
 
     return *this;
 }
@@ -166,25 +157,33 @@ BigUnsignedInt<N>::BigUnsignedInt(const std::string& stringRepr) : BigUnsignedIn
 }
 
 template<std::size_t N>
+void BigUnsignedInt<N>::resetToZero() {
+    for(Unsigned& bit:_binRepr)
+        bit = 0;
+}
+
+template<std::size_t N>
 void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedInt& bigUnsignedInt)
 {
     using namespace std;
+
+    // Check input
     regex unsignedNumber("[[:digit:]]+");
     if (!regex_match(input, unsignedNumber))
         throw invalid_argument("provided input isn't unsigned integer");
 
     // Fill dividend with digits of provided number
-    queue<typename BigUnsignedInt::Unsigned> dividend;
+    queue<Unsigned> dividend;
     for (const auto& letter:input)
-        dividend.push(static_cast<typename BigUnsignedInt<N>::Unsigned>(letter - '0'));
+        dividend.push(static_cast<Unsigned>(letter - '0'));
 
-    deque<typename BigUnsignedInt::Unsigned> quotient;
-    typename BigUnsignedInt::size_type counter = N - 1;
+    deque<Unsigned> quotient;
+    size_type counter = N - 1;
 
     // Convert provided number to binary
     do
     {
-        typename BigUnsignedInt::Unsigned value = 0;
+        Unsigned value = 0;
         while (!dividend.empty())
         {
             value = value * 10 + dividend.front();
@@ -192,7 +191,7 @@ void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedIn
             quotient.push_back(value / 2);
             value %= 2;
 
-            if (counter == numeric_limits<decltype(counter)>::max())
+            if (counter == numeric_limits<size_type>::max())
                 throw invalid_argument("provided number is too large");
         }
         bigUnsignedInt._binRepr[counter] = value;
