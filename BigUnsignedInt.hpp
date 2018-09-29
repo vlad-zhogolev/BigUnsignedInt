@@ -174,17 +174,17 @@ void BigUnsignedInt<N>::createFromString(const std::string& input, BigUnsignedIn
         throw invalid_argument("provided input isn't unsigned integer");
 
     // Fill dividend with digits of provided number
-    queue<typename BigUnsignedInt<N>::Unsigned> dividend;
+    queue<typename BigUnsignedInt::Unsigned> dividend;
     for (const auto& letter:input)
         dividend.push(static_cast<typename BigUnsignedInt<N>::Unsigned>(letter - '0'));
 
-    deque<typename BigUnsignedInt<N>::Unsigned> quotient;
-    typename BigUnsignedInt<N>::size_type counter = N - 1;
+    deque<typename BigUnsignedInt::Unsigned> quotient;
+    typename BigUnsignedInt::size_type counter = N - 1;
 
     // Convert provided number to binary
     do
     {
-        typename BigUnsignedInt<N>::Unsigned value = 0;
+        typename BigUnsignedInt::Unsigned value = 0;
         while (!dividend.empty())
         {
             value = value * 10 + dividend.front();
